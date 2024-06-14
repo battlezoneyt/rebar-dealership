@@ -1,4 +1,5 @@
 import * as alt from 'alt-server';
 
-import './functions.js';
+import './handlers.js';
 import './command.js';
+import './functions.js';

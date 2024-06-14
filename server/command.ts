@@ -1,10 +1,13 @@
 import { useRebar } from '@Server/index.js';
 import alt from 'alt-server';
+import { Locations } from '../shared/interface.js';
 
 const rebar = useRebar();
 const messenger = rebar.messenger.useMessenger();
 const api = rebar.useApi();
 const getter = rebar.get.usePlayerGetter();
+const apiHandler = await api.getAsync('rebar-dealership-handlers-api');
+const apifunction = await rebar.useApi().getAsync('rebar-dealership-functions-api');
 
 async function registermyCommands() {
     messenger.commands.register({
@@ -13,14 +16,10 @@ async function registermyCommands() {
         options: { accountPermissions: ['admin'] },
         callback: async (player: alt.Player, characterId: string, factionName: string, Label: string) => {
             try {
-                const api = await rebar.useApi().getAsync('rebar-dealership-api');
-                const result = await api.create(characterId, {
-                    factionName: factionName,
-                    label: Label,
-                    bank: 10000,
-                    socityPay: false,
-                    defaultDuty: true,
-                    offDutypay: false,
+                const result = await apiHandler.create({
+                    dealershipName: 'Sunna Paana',
+                    dealerShipType: 'self_service',
+                    vehicleType: 'car',
                 });
                 console.log(result.response);
             } catch (err) {
@@ -28,6 +27,51 @@ async function registermyCommands() {
             }
         },
     });
+
+    messenger.commands.register({
+        name: '/daf',
+        desc: '/tpm ',
+        options: { accountPermissions: ['admin'] },
+        callback: async (player: alt.Player, vehShopId: string, factionId: string) => {
+            const result = await apifunction.setFaction(vehShopId, factionId);
+            console.log(result);
+        },
+    });
+
+    messenger.commands.register({
+        name: '/dal',
+        desc: '/tpm ',
+        options: { accountPermissions: ['admin'] },
+        callback: async (
+            player: alt.Player,
+            vehShopId: string,
+            // locationType: keyof Locations,
+            locationName: string,
+            x: string,
+            y: string,
+            z: string,
+        ) => {
+            const pos = new alt.Vector3(parseFloat(x), parseFloat(y), parseFloat(z));
+            const result = await apifunction.addLocations(player, vehShopId, 'DelerShipLocation', locationName, pos);
+            console.log(result);
+        },
+    });
+
+    messenger.commands.register({
+        name: '/drl',
+        desc: '/tpm ',
+        options: { accountPermissions: ['admin'] },
+        callback: async (
+            player: alt.Player,
+            dealershipId: string,
+            locationType: keyof Locations,
+            locationId: string,
+        ) => {
+            const result = await apifunction.removeLocations(player, dealershipId, locationType, locationId);
+            console.log(result);
+        },
+    });
+
     // messenger.commands.register({
     //     name: '/fdelete',
     //     desc: '/tpm ',
@@ -40,15 +84,6 @@ async function registermyCommands() {
     //         } catch (err) {
     //             messenger.message.send(player, { type: 'warning', content: 'Somthing went wrong!.' });
     //         }
-    //     },
-    // });
-    // messenger.commands.register({
-    //     name: '/add',
-    //     desc: '/tpm ',
-    //     options: { accountPermissions: ['admin'] },
-    //     callback: async (player: alt.Player, factionId: string, charid: string) => {
-    //         const apifunction = await api.getAsync('faction-functions-api');
-    //         const result = await apifunction.addMember(factionId, charid);
     //     },
     // });
 

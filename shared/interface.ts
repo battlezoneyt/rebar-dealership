@@ -9,7 +9,7 @@ export type DealershipCore = {
 
 export type Dealership = DealershipCore & {
     factionId?: string;
-    location?: Array<Locations>;
+    location?: Locations;
     vehicles?: Array<Vehicles>;
     saleHistory?: Array<SalesHistory>;
     purchaseHistory?: Array<PurchaseHistory>;
