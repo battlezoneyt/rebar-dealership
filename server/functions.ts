@@ -155,7 +155,6 @@ export function useDealershipFunctions() {
         if (index <= -1) {
             return false;
         }
-
         dealership.vehicles[index].isDisabled = !dealership.vehicles[index].isDisabled;
 
         const didUpdate = await useDealershipHandlers().update(dealership._id as string, 'vehicles', {
@@ -235,20 +234,25 @@ export function useDealershipFunctions() {
     }
 
     async function setAvailableColor(dealershipId: string, vehicleId: string, color: string): Promise<any> {
-        const filteredVehicle = await getVehicle(dealershipId, vehicleId);
-        if (!filteredVehicle || filteredVehicle === undefined) return false;
-
-        if (!filteredVehicle.availableColor || filteredVehicle.availableColor === undefined) {
-            filteredVehicle.availableColor = [];
-        }
-        const colorExists = filteredVehicle.availableColor.includes(color);
-        if (colorExists) {
+        const dealership = await useDealershipHandlers().findDealershipById(dealershipId);
+        if (!dealership || dealership === undefined) return false;
+        if (!dealership.vehicles) {
             return false;
         }
-        filteredVehicle.availableColor.push(color);
+        const index = dealership.vehicles.findIndex((r) => r.vehicleId === vehicleId);
+        if (index <= -1) {
+            return false;
+        }
 
-        const didUpdate = await useDealershipHandlers().update(vehicleId as string, 'vehicles', {
-            vehicles: filteredVehicle.availableColor,
+        if (!dealership.vehicles[index].availableColor || dealership.vehicles[index].availableColor === undefined) {
+            dealership.vehicles[index].availableColor = [];
+        }
+
+        if (dealership.vehicles[index].availableColor.includes(color)) return;
+        dealership.vehicles[index].availableColor.push(color);
+
+        const didUpdate = await useDealershipHandlers().update(dealership._id as string, 'vehicles', {
+            vehicles: dealership.vehicles,
         });
 
         return didUpdate.status;

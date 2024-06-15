@@ -71,43 +71,13 @@ export function useDealershipHandlers() {
     async function remove(_id: string): Promise<any> {
         const vehShop = vehicleShops[_id];
         if (!vehShop) {
-            return { status: false, response: `Faction was not found with id: ${_id}` };
+            return { status: false, response: `Dealership was not found with id: ${_id}` };
         }
-
-        // delete vehShop[_id];
-
-        // let onlinePlayers: Array<alt.Player> = [];
-        // for (const member of members) {
-        //     member.faction = null;
-        //     const xPlayer: alt.Player = getter.byCharacter(member._id);
-
-        //     if (xPlayer && Rebar.document.character.useCharacter(xPlayer).isValid()) {
-        //         const character = Rebar.document.character.useCharacter(xPlayer);
-        //         await character.set('faction', '');
-
-        //         if (character.get()._id === ownerIdentifier) {
-        //             const characterCurrency = useCurrency(xPlayer, 'Character');
-        //             await characterCurrency.add('bank', faction.bank);
-        //         }
-
-        //         onlinePlayers.push(xPlayer);
-        //     } else if (member._id === ownerIdentifier) {
-        //         member.bank += faction.bank;
-        //         await db.update({ _id: ownerIdentifier, bank: member.bank }, 'Characters');
-        //     }
-        // }
-
-        // for (const vehicle of faction.vehicles) {
-        //     const altVehicle = alt.Vehicle.all.find((v) => v && v.valid && v.id.toString() === vehicle.vehicleId);
-        //     if (altVehicle) altVehicle.destroy();
-
-        //     await db.deleteDocument(vehicle.vehicleId, 'Vehicles');
-        // }
 
         return { status: true, response: `Deleted Dealership successfully` };
     }
 
-    async function update(_id: string, fieldName: string, partialObject: any): Promise<any> {
+    async function update(_id: string, fieldName: string, partialObject: Partial<Dealership>): Promise<any> {
         const vehShop = vehicleShops[_id];
         console.log(vehShop);
         if (!vehShop) {
