@@ -1,4 +1,6 @@
+import { time } from '@Shared/utility/index.js';
 import * as alt from 'alt-shared';
+import { Timestamp } from 'mongodb';
 
 export type DealershipCore = {
     _id?: string;
@@ -11,19 +13,19 @@ export type Dealership = DealershipCore & {
     factionId?: string;
     location?: Locations;
     vehicles?: Array<Vehicles>;
-    saleHistory?: Array<SalesHistory>;
-    purchaseHistory?: Array<PurchaseHistory>;
 };
 
 export type PurchaseHistory = {
-    vehicleId: string;
-    purchaseDataTime: string;
-    purchaseAmount: string;
-    stock: number;
+    purchaseId: string;
+    purchaseQty: number;
+    purchaseDataTime: Date;
+    purchaseAmount: number;
 };
 export type Locations = {
     DelerShipLocation?: Array<Locals>;
     PurchaseLocation?: Array<Locals>;
+    spawnVehicleLocation?: Array<Locals>;
+    purchaseSpawnLocation?: Array<Locals>;
 };
 const DealerShipTypes = {
     self_service: 1,
@@ -55,16 +57,24 @@ export type Vehicles = {
     vehicleId: string;
     vehicleCategory: VEHICLE_CATEFORY;
     vehicleName: string;
+    vehicleModel: string;
     VehicleSalePrice: number;
     VehiclePurchasePrice?: number;
-    vehicleInfo?: [];
+    saleHistory?: Array<SalesHistory>;
+    purchaseHistory?: Array<PurchaseHistory>;
+    isDisabled?: boolean;
+    stock?: number;
+    availableColor?: string[];
 };
 
-export type SalesHistory = Vehicles & {
+export type SalesHistory = {
+    salesId: string;
     soldVehicleId: string;
+    soldTocharacterId: string;
     soldDateTime: string;
     payementType: PAYMENT_TYPE;
     payementStatus: boolean;
+    soldPrice: number;
 };
 
 const PaymentType = {

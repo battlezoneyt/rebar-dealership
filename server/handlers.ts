@@ -48,11 +48,9 @@ export function useDealershipHandlers() {
             ..._vehShop,
         };
 
-        const existingFactions = await db.getMany<Dealership>(
-            { dealershipName: _vehShop.dealershipName },
-            DEALERSHIP_COLLECTION,
-        );
-        if (existingFactions.length > 0) {
+        const index = findDealershipByName(_vehShop.dealershipName);
+
+        if (index) {
             alt.logWarning(`This Faction ` + _vehShop.dealershipName + ` already created.`);
             return { status: false, response: `Cannot insert faction into database.` };
         }
@@ -109,7 +107,7 @@ export function useDealershipHandlers() {
         return { status: true, response: `Deleted Dealership successfully` };
     }
 
-    async function update(_id: string, fieldName: string, partialObject: Partial<Dealership>): Promise<any> {
+    async function update(_id: string, fieldName: string, partialObject: any): Promise<any> {
         const vehShop = vehicleShops[_id];
         console.log(vehShop);
         if (!vehShop) {
