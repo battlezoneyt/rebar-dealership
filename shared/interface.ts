@@ -71,10 +71,10 @@ export type SalesHistory = {
     salesId: string;
     soldVehicleId: string;
     soldTocharacterId: string;
-    soldDateTime: string;
-    payementType: PAYMENT_TYPE;
-    payementStatus: boolean;
+    soldDateTime: Date;
     soldPrice: number;
+    payementStatus: boolean;
+    payementType?: PAYMENT_TYPE;
 };
 
 const PaymentType = {

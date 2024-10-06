@@ -2,7 +2,7 @@ import * as alt from 'alt-server';
 import { useRebar } from '@Server/index.js';
 import { Character } from '@Shared/types/character.js';
 import { useDealershipHandlers } from './handlers.js';
-import { Locals, Locations, VEHICLE_CATEFORY, Vehicles } from '../shared/interface.js';
+import { DEALERSHIP_TYPES, Locals, Locations, VEHICLE_CATEFORY, Vehicles } from '../shared/interface.js';
 import { time } from '@Shared/utility/index.js';
 import { timeStamp } from 'console';
 
@@ -11,10 +11,11 @@ const Rebar = useRebar();
 const db = Rebar.database.useDatabase();
 const getter = Rebar.get.usePlayerGetter();
 const api = Rebar.useApi();
-const RebarEvents = Rebar.events.useEvents();
 const FACTION_COLLECTION = 'Vehicleshop';
 const factionHandleapi = await Rebar.useApi().getAsync('faction-handlers-api');
 const factionFunctionapi = await api.getAsync('faction-functions-api');
+const FuelAPI = await Rebar.useApi().getAsync('ascended-fuel-api');
+
 export function useDealershipFunctions() {
     /**
      * set Faction to a dealership
@@ -45,17 +46,16 @@ export function useDealershipFunctions() {
         if ((dealership.factionId && dealership.factionId !== null) || dealership.factionId != '') {
             return `This Dealership with ${dealershipId} is liked to faction. Please remove before adding location`;
         }
-        if (dealership.location !== undefined) {
-            if (dealership.location[locationType] !== undefined || dealership.location[locationType].length > 0) {
-                const index = dealership.location[locationType].findIndex((r) => r.locationName != locationName);
-                if (index <= -1) {
-                    return false;
-                }
-            } else {
-                dealership.location[locationType] = [];
+        if (dealership.location === undefined) {
+            dealership.location = {};
+        }
+        if (dealership.location[locationType] !== undefined || dealership.location[locationType].length > 0) {
+            const index = dealership.location[locationType].findIndex((r) => r.locationName != locationName);
+            if (index <= -1) {
+                return false;
             }
         } else {
-            dealership.location = {};
+            dealership.location[locationType] = [];
         }
         let location: Locals = {
             locationId: Rebar.utility.sha256Random(JSON.stringify(dealership.location)),
@@ -81,10 +81,7 @@ export function useDealershipFunctions() {
         locationId: string,
     ): Promise<boolean> {
         const dealership = await useDealershipHandlers().findDealershipById(delershipId);
-        if (!dealership || dealership === undefined) return false;
-        if (dealership.location === undefined) return false;
-        if (dealership.location[locationType] === undefined) return false;
-        if (dealership.location[locationType].length < 0) return false;
+        if (!dealership?.location?.[locationType]?.length) return false;
         const index = dealership.location[locationType].findIndex((r) => r.locationId === locationId);
         if (index <= -1) {
             return false;
@@ -100,9 +97,6 @@ export function useDealershipFunctions() {
         const didUpdate = await useDealershipHandlers().update(dealership._id as string, 'location', {
             location: dealership.location,
         });
-        if (didUpdate.status) {
-            // updateMembers(faction);
-        }
 
         return didUpdate.status;
     }
@@ -164,7 +158,7 @@ export function useDealershipFunctions() {
         return didUpdate.status;
     }
 
-    async function getAllVehiclesOfFaction(dealershipId: string): Promise<Vehicles[]> {
+    async function getAllVehiclesOfDealership(dealershipId: string): Promise<Vehicles[]> {
         const dealership = await useDealershipHandlers().findDealershipById(dealershipId);
         if (!dealership || dealership === undefined) return undefined;
         const removeDisabled = dealership.vehicles.filter((vehicle) => !vehicle.isDisabled);
@@ -182,12 +176,12 @@ export function useDealershipFunctions() {
         if (index <= -1) {
             return false;
         }
-        const vehicleInfo = await getVehicle(dealershipId, vehicleId);
         if (
-            !vehicleInfo ||
-            vehicleInfo === undefined ||
-            !vehicleInfo.VehiclePurchasePrice ||
-            vehicleInfo.VehiclePurchasePrice === undefined
+            !dealership.vehicles[index] ||
+            dealership.vehicles[index] === undefined ||
+            !dealership.vehicles[index].VehiclePurchasePrice ||
+            dealership.vehicles[index].VehiclePurchasePrice === undefined ||
+            dealership.vehicles[index].isDisabled
         ) {
             return;
         }
@@ -195,7 +189,7 @@ export function useDealershipFunctions() {
             purchaseId: Rebar.utility.sha256Random(JSON.stringify(dealership.vehicles[index].purchaseHistory)),
             purchaseQty: purchaseQty,
             purchaseDataTime: new Date(),
-            purchaseAmount: vehicleInfo.VehiclePurchasePrice * purchaseQty,
+            purchaseAmount: dealership.vehicles[index].VehiclePurchasePrice * purchaseQty,
         };
         if (!dealership.vehicles[index].purchaseHistory || dealership.vehicles[index].purchaseHistory === undefined) {
             dealership.vehicles[index].purchaseHistory = [];
@@ -203,7 +197,7 @@ export function useDealershipFunctions() {
 
         const paymentStatus = await factionFunctionapi.subBank(
             dealership.factionId,
-            vehicleInfo.VehiclePurchasePrice * purchaseQty,
+            dealership.vehicles[index].VehiclePurchasePrice * purchaseQty,
         );
         if (!paymentStatus) {
             return;
@@ -258,17 +252,82 @@ export function useDealershipFunctions() {
         return didUpdate.status;
     }
 
+    async function addSales(dealershipId: string, vehicleId: string, characterId: string): Promise<any> {
+        const dealership = await useDealershipHandlers().findDealershipById(dealershipId);
+        if (!dealership || dealership === undefined) return false;
+        if (!dealership.vehicles) {
+            return false;
+        }
+        const index = dealership.vehicles.findIndex((r) => r.vehicleId === vehicleId);
+        if (index <= -1) {
+            return false;
+        }
+        if (
+            !dealership.vehicles[index] ||
+            dealership.vehicles[index] === undefined ||
+            !dealership.vehicles[index].VehiclePurchasePrice ||
+            dealership.vehicles[index].VehiclePurchasePrice === undefined ||
+            dealership.vehicles[index].isDisabled
+        ) {
+            return;
+        }
+        const newVehicle = new alt.Vehicle(
+            dealership.vehicles[index].vehicleModel,
+            645.85 + 3,
+            -260.33,
+            42.009,
+            0,
+            0,
+            0,
+        );
+        const document = await Rebar.vehicle.useVehicle(newVehicle).create(characterId);
+        const soldVehicleId = document._id;
+        Rebar.document.vehicle.useVehicle(newVehicle).setBulk({
+            fuel: 30,
+            ascendedFuel: {
+                consumption: 0,
+                max: 0,
+                type: '',
+            },
+        });
+        Rebar.document.vehicle.useVehicleBinder(newVehicle).bind(Rebar.document.vehicle.useVehicle(newVehicle).get());
+        Rebar.vehicle.useVehicle(newVehicle).sync();
+        Rebar.vehicle.useVehicle(newVehicle).save();
+
+        const salesHistory = {
+            salesId: Rebar.utility.sha256Random(JSON.stringify(dealership.vehicles[index].saleHistory)),
+            soldVehicleId: soldVehicleId,
+            soldTocharacterId: characterId,
+            soldDateTime: new Date(),
+            soldPrice: dealership.vehicles[index].VehicleSalePrice,
+            payementStatus: false,
+        };
+        if (!dealership.vehicles[index].saleHistory || dealership.vehicles[index].saleHistory === undefined) {
+            dealership.vehicles[index].saleHistory = [];
+        }
+
+        dealership.vehicles[index].saleHistory.push(salesHistory);
+        dealership.vehicles[index].stock = dealership.vehicles[index].stock - 1;
+
+        const didUpdate = await useDealershipHandlers().update(dealership._id as string, 'vehicles', {
+            vehicles: dealership.vehicles,
+        });
+
+        return didUpdate.status;
+    }
+
     return {
         setFaction,
         addLocations,
         removeLocations,
         addVehicles,
         setVehicleStatus, //check wheather the vehicle is disabled / enabled
-        getAllVehiclesOfFaction, //return all vehicles which are not in disable status
+        getAllVehiclesOfDealership, //return all vehicles which are not in disable status
         addPurchase,
         getVehicle,
         getAvailableStock,
         setAvailableColor,
+        addSales,
     };
 }
 
