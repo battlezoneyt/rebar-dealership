@@ -10,8 +10,8 @@ const apiHandler = await api.getAsync('rebar-dealership-handlers-api');
 const apifunction = await api.getAsync('rebar-dealership-functions-api');
 
 messenger.commands.register({
-    name: '/dcreate',
-    desc: '/dcreate to create Dealership',
+    name: '/dlrcreate',
+    desc: '/dlrcreate to create Dealership',
     options: { permissions: ['admin'] },
     callback: async (
         player: alt.Player,
@@ -33,8 +33,8 @@ messenger.commands.register({
 });
 
 messenger.commands.register({
-    name: '/daf',
-    desc: '/tpm ',
+    name: '/dlrsetfaction',
+    desc: '/dlrsetfaction set dealership faction ',
     options: { permissions: ['admin'] },
     callback: async (player: alt.Player, vehShopId: string, factionId: string) => {
         const result = await apifunction.setFaction(vehShopId, factionId);
@@ -43,8 +43,8 @@ messenger.commands.register({
 });
 
 messenger.commands.register({
-    name: '/dal',
-    desc: '/tpm ',
+    name: '/dlraddlocation',
+    desc: '/dlraddlocation to add dealership location ',
     options: { permissions: ['admin'] },
     callback: async (
         player: alt.Player,
@@ -62,8 +62,8 @@ messenger.commands.register({
 });
 
 messenger.commands.register({
-    name: '/drl',
-    desc: '/tpm ',
+    name: '/dlrremovelocation',
+    desc: '/dlrremovelocation to remove dealership location ',
     options: { permissions: ['admin'] },
     callback: async (player: alt.Player, dealershipId: string, locationType: keyof Locations, locationId: string) => {
         const result = await apifunction.removeLocations(dealershipId, locationType, locationId);
@@ -72,8 +72,8 @@ messenger.commands.register({
 });
 
 messenger.commands.register({
-    name: '/dav',
-    desc: '/tpm ',
+    name: '/dlraddvehicle',
+    desc: '/dlraddvehicle new vehicle to the dealership ',
     options: { permissions: ['admin'] },
     callback: async (
         player: alt.Player,
@@ -90,8 +90,8 @@ messenger.commands.register({
 });
 
 messenger.commands.register({
-    name: '/ddv',
-    desc: '/tpm ',
+    name: '/dlrsetvehiclestatus',
+    desc: '/dlrsetvehiclestatus to set vehicle status to enabled or disabled ',
     options: { permissions: ['admin'] },
     callback: async (player: alt.Player, dealershipId: string, vehicleId: string) => {
         const result = await apifunction.setVehicleStatus(dealershipId, vehicleId);
@@ -100,8 +100,8 @@ messenger.commands.register({
 });
 
 messenger.commands.register({
-    name: '/dgav',
-    desc: '/tpm ',
+    name: '/dlrgetallvehicles',
+    desc: '/dlrgetallvehicles to get all aviable vehicle in the dealership',
     options: { permissions: ['admin'] },
     callback: async (player: alt.Player, dealershipId: string) => {
         const result = await apifunction.getAllVehiclesOfDealership(dealershipId);
@@ -110,8 +110,8 @@ messenger.commands.register({
 });
 
 messenger.commands.register({
-    name: '/dpv',
-    desc: '/tpm ',
+    name: '/dlraddstock',
+    desc: '/dlraddstock to add stock to dealership ',
     options: { permissions: ['admin'] },
     callback: async (player: alt.Player, dealershipId: string, vehicleId: string, qty: string) => {
         const result = await apifunction.addPurchase(dealershipId, vehicleId, parseInt(qty));
@@ -119,8 +119,8 @@ messenger.commands.register({
 });
 
 messenger.commands.register({
-    name: '/davc',
-    desc: '/tpm ',
+    name: '/dlrsetcolor',
+    desc: '/dlrsetcolor set available color',
     options: { permissions: ['admin'] },
     callback: async (player: alt.Player, dealershipId: string, vehicleId: string, color: string) => {
         if (!dealershipId || !vehicleId || !color) return;
@@ -131,8 +131,8 @@ messenger.commands.register({
 });
 
 messenger.commands.register({
-    name: '/dsnv',
-    desc: '/tpm ',
+    name: '/dlrsalevehicle',
+    desc: '/dlrsalevehicle to sell a vehicle',
     options: { permissions: ['admin'] },
     callback: async (player: alt.Player, dealershipId: string, vehicleId: string, characterId: string) => {
         if (!dealershipId || !vehicleId) return;
