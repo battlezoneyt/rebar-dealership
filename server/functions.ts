@@ -2,9 +2,22 @@ import * as alt from 'alt-server';
 import { useRebar } from '@Server/index.js';
 import { Character } from '@Shared/types/character.js';
 import { useDealershipHandlers } from './handlers.js';
-import { DEALERSHIP_TYPES, Locals, Locations, VEHICLE_CATEFORY, Vehicles } from '../shared/interface.js';
+import {
+    CurrencyDefinitions,
+    DEALERSHIP_TYPES,
+    Locals,
+    Locations,
+    VEHICLE_CATEFORY,
+    Vehicles,
+} from '../shared/interface.js';
 import { time } from '@Shared/utility/index.js';
 import { timeStamp } from 'console';
+import {
+    AccountCurrencies,
+    AllCurrencies,
+    AllCurrencyTypes,
+    CharacterCurrencies,
+} from '@Plugins/rebar-currency/shared/config.js';
 
 const API_NAME = 'rebar-dealership-functions-api';
 const Rebar = useRebar();
@@ -15,6 +28,7 @@ const FACTION_COLLECTION = 'Vehicleshop';
 const factionHandleapi = await Rebar.useApi().getAsync('faction-handlers-api');
 const factionFunctionapi = await api.getAsync('faction-functions-api');
 const FuelAPI = await Rebar.useApi().getAsync('ascended-fuel-api');
+const { useCurrency } = await api.getAsync('currency-api');
 
 export function useDealershipFunctions() {
     /**
@@ -252,7 +266,15 @@ export function useDealershipFunctions() {
         return didUpdate.status;
     }
 
-    async function addSales(dealershipId: string, vehicleId: string, characterId: string): Promise<any> {
+    async function addSales(
+        player: alt.Player,
+        dealershipId: string,
+        vehicleId: string,
+        characterId: string,
+        color?: string,
+        CurrencyType?: keyof CurrencyDefinitions,
+        payementType?: AllCurrencyTypes,
+    ): Promise<any> {
         const dealership = await useDealershipHandlers().findDealershipById(dealershipId);
         if (!dealership || dealership === undefined) return false;
         if (!dealership.vehicles) {
@@ -267,10 +289,14 @@ export function useDealershipFunctions() {
             dealership.vehicles[index] === undefined ||
             !dealership.vehicles[index].VehiclePurchasePrice ||
             dealership.vehicles[index].VehiclePurchasePrice === undefined ||
-            dealership.vehicles[index].isDisabled
+            !dealership.vehicles[index].VehicleSalePrice ||
+            dealership.vehicles[index].VehicleSalePrice === undefined ||
+            dealership.vehicles[index].isDisabled ||
+            dealership.vehicles[index].stock <= 0
         ) {
             return;
         }
+
         const newVehicle = new alt.Vehicle(
             dealership.vehicles[index].vehicleModel,
             645.85 + 3,
@@ -281,6 +307,7 @@ export function useDealershipFunctions() {
             0,
         );
         const document = await Rebar.vehicle.useVehicle(newVehicle).create(characterId);
+        if (!document) return;
         const soldVehicleId = document._id;
         Rebar.document.vehicle.useVehicle(newVehicle).setBulk({
             fuel: 30,
@@ -293,22 +320,75 @@ export function useDealershipFunctions() {
         Rebar.document.vehicle.useVehicleBinder(newVehicle).bind(Rebar.document.vehicle.useVehicle(newVehicle).get());
         Rebar.vehicle.useVehicle(newVehicle).sync();
         Rebar.vehicle.useVehicle(newVehicle).save();
+        if (dealership.dealerShipType == 'self_service') {
+            if (CurrencyType == 'Character') {
+                const characterCurrency = useCurrency(player, 'Character');
+                const isCashAvailable = characterCurrency.has(
+                    payementType as keyof CharacterCurrencies,
+                    dealership.vehicles[index].VehicleSalePrice,
+                );
+                if (!isCashAvailable) {
+                    return;
+                } else {
+                    characterCurrency.sub(
+                        payementType as keyof CharacterCurrencies,
+                        dealership.vehicles[index].VehicleSalePrice,
+                    );
+                }
+            } else if (CurrencyType == 'Account') {
+                const accountCurrency = useCurrency(player, 'Account');
+                const isCashAvailable = accountCurrency.has(
+                    payementType as keyof AccountCurrencies,
+                    dealership.vehicles[index].VehicleSalePrice,
+                );
+                if (!isCashAvailable) {
+                    return;
+                } else {
+                    accountCurrency.sub(
+                        payementType as keyof AccountCurrencies,
+                        dealership.vehicles[index].VehicleSalePrice,
+                    );
+                }
+            } else {
+                return;
+            }
+            const paymentStatus = await factionFunctionapi.addBank(
+                dealership.factionId,
+                dealership.vehicles[index].VehiclePurchasePrice,
+            );
+            if (!paymentStatus) {
+                return;
+            }
+            const salesHistory = {
+                salesId: Rebar.utility.sha256Random(JSON.stringify(dealership.vehicles[index].saleHistory)),
+                soldVehicleId: soldVehicleId,
+                soldTocharacterId: characterId,
+                soldDateTime: new Date(),
+                soldPrice: dealership.vehicles[index].VehicleSalePrice,
+                payementStatus: true,
+                payementType: payementType,
+            };
+            if (!dealership.vehicles[index].saleHistory || dealership.vehicles[index].saleHistory === undefined) {
+                dealership.vehicles[index].saleHistory = [];
+            }
 
-        const salesHistory = {
-            salesId: Rebar.utility.sha256Random(JSON.stringify(dealership.vehicles[index].saleHistory)),
-            soldVehicleId: soldVehicleId,
-            soldTocharacterId: characterId,
-            soldDateTime: new Date(),
-            soldPrice: dealership.vehicles[index].VehicleSalePrice,
-            payementStatus: false,
-        };
-        if (!dealership.vehicles[index].saleHistory || dealership.vehicles[index].saleHistory === undefined) {
-            dealership.vehicles[index].saleHistory = [];
+            dealership.vehicles[index].saleHistory.push(salesHistory);
+        } else {
+            const salesHistory = {
+                salesId: Rebar.utility.sha256Random(JSON.stringify(dealership.vehicles[index].saleHistory)),
+                soldVehicleId: soldVehicleId,
+                soldTocharacterId: characterId,
+                soldDateTime: new Date(),
+                soldPrice: dealership.vehicles[index].VehicleSalePrice,
+                payementStatus: false,
+            };
+            if (!dealership.vehicles[index].saleHistory || dealership.vehicles[index].saleHistory === undefined) {
+                dealership.vehicles[index].saleHistory = [];
+            }
+
+            dealership.vehicles[index].saleHistory.push(salesHistory);
         }
-
-        dealership.vehicles[index].saleHistory.push(salesHistory);
         dealership.vehicles[index].stock = dealership.vehicles[index].stock - 1;
-
         const didUpdate = await useDealershipHandlers().update(dealership._id as string, 'vehicles', {
             vehicles: dealership.vehicles,
         });

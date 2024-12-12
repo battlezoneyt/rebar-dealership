@@ -1,6 +1,7 @@
 import { useRebar } from '@Server/index.js';
 import alt from 'alt-server';
-import { Locations, VEHICLE_CATEFORY, VEHICLE_TYPES } from '../shared/interface.js';
+import { CurrencyDefinitions, Locations, VEHICLE_CATEFORY, VEHICLE_TYPES } from '../shared/interface.js';
+import { AccountCurrencies, AllCurrencyTypes, CharacterCurrencies } from '@Plugins/rebar-currency/shared/config.js';
 
 const rebar = useRebar();
 const messenger = rebar.messenger.useMessenger();
@@ -134,10 +135,25 @@ messenger.commands.register({
     name: '/dlrsalevehicle',
     desc: '/dlrsalevehicle to sell a vehicle',
     options: { permissions: ['admin'] },
-    callback: async (player: alt.Player, dealershipId: string, vehicleId: string, characterId: string) => {
+    callback: async (
+        player: alt.Player,
+        dealershipId: string,
+        vehicleId: string,
+        characterId: string,
+        color?: string,
+        CurrencyType?: keyof CurrencyDefinitions,
+        PaymentType?: AllCurrencyTypes,
+    ) => {
         if (!dealershipId || !vehicleId) return;
-
-        const result = await apifunction.addSales(dealershipId, vehicleId, characterId);
+        const result = await apifunction.addSales(
+            player,
+            dealershipId,
+            vehicleId,
+            characterId,
+            color,
+            CurrencyType,
+            PaymentType,
+        );
         console.log(result);
     },
 });

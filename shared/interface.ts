@@ -1,3 +1,4 @@
+import { AccountCurrencies, AllCurrencyTypes, CharacterCurrencies } from '@Plugins/rebar-currency/shared/config.js';
 import { time } from '@Shared/utility/index.js';
 import * as alt from 'alt-shared';
 import { Timestamp } from 'mongodb';
@@ -7,6 +8,11 @@ export type DealershipCore = {
     dealershipName: string;
     dealerShipType: DEALERSHIP_TYPES;
     vehicleType: VEHICLE_TYPES;
+};
+
+export type CurrencyDefinitions = {
+    Character: CharacterCurrencies;
+    Account: AccountCurrencies;
 };
 
 export type Dealership = DealershipCore & {
@@ -74,7 +80,7 @@ export type SalesHistory = {
     soldDateTime: Date;
     soldPrice: number;
     payementStatus: boolean;
-    payementType?: PAYMENT_TYPE;
+    payementType?: AllCurrencyTypes;
 };
 
 const PaymentType = {
