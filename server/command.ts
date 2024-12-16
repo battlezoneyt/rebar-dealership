@@ -1,6 +1,12 @@
 import { useRebar } from '@Server/index.js';
 import alt from 'alt-server';
-import { CurrencyDefinitions, Locations, VEHICLE_CATEFORY, VEHICLE_TYPES } from '../shared/interface.js';
+import {
+    CurrencyDefinitions,
+    DEALERSHIP_TYPES,
+    Locations,
+    VEHICLE_CATEFORY,
+    VEHICLE_TYPES,
+} from '../shared/interface.js';
 import { AccountCurrencies, AllCurrencyTypes, CharacterCurrencies } from '@Plugins/rebar-currency/shared/config.js';
 
 const rebar = useRebar();
@@ -17,14 +23,14 @@ messenger.commands.register({
     callback: async (
         player: alt.Player,
         dealershipName: string,
-        dealerShipType: string,
+        dealerShipType: DEALERSHIP_TYPES,
         vehicleType: VEHICLE_TYPES,
     ) => {
         try {
             const result = await apiHandler.create({
-                dealershipName: 'Sunna Vaana',
-                dealerShipType: 'self_service',
-                vehicleType: 'car',
+                dealershipName: dealershipName,
+                dealerShipType: dealerShipType,
+                vehicleType: vehicleType,
             });
             console.log(result.response);
         } catch (err) {
@@ -79,13 +85,19 @@ messenger.commands.register({
     callback: async (
         player: alt.Player,
         vehShopId: string,
-        vehicleCategory: VEHICLE_CATEFORY,
-        vehicleName: string,
-        vehicleModel: string,
-        VehicleSalePrice: string,
-        VehiclePurchasePrice?: string,
+        vehicleId: string,
+        VehiclePurchasePrice: string,
+        VehicleSalePrice?: string,
+        showInList?: string,
     ) => {
-        const result = await apifunction.addVehicles(vehShopId, 'SUV', 'Akuma', 'police', 10000, 8000);
+        const showInListBoolean = showInList?.toLowerCase() === 'true';
+        const result = await apifunction.addVehiclesToDealership(
+            vehShopId,
+            vehicleId,
+            parseInt(VehiclePurchasePrice),
+            parseInt(VehicleSalePrice),
+            showInListBoolean,
+        );
         console.log(result);
     },
 });
@@ -105,8 +117,8 @@ messenger.commands.register({
     desc: '/dlrgetallvehicles to get all aviable vehicle in the dealership',
     options: { permissions: ['admin'] },
     callback: async (player: alt.Player, dealershipId: string) => {
-        const result = await apifunction.getAllVehiclesOfDealership(dealershipId);
-        console.log(result);
+        const dealership = await apiHandler.findDealershipById(dealershipId);
+        console.log(dealership.vehicles);
     },
 });
 
@@ -150,7 +162,7 @@ messenger.commands.register({
             dealershipId,
             vehicleId,
             characterId,
-            color,
+            parseInt(color),
             CurrencyType,
             PaymentType,
         );

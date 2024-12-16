@@ -1,7 +1,21 @@
+import { FuelType } from '@Plugins/asc-fuel/server/src/config.js';
 import { AccountCurrencies, AllCurrencyTypes, CharacterCurrencies } from '@Plugins/rebar-currency/shared/config.js';
 import { time } from '@Shared/utility/index.js';
 import * as alt from 'alt-shared';
 import { Timestamp } from 'mongodb';
+
+declare module '@Shared/types/vehicle.js' {
+    export interface Vehicle {
+        garrageInfo?: {
+            garageID: string;
+            isStored: boolean;
+            impound?: boolean;
+            impoundTime?: Timestamp;
+            impoundBy?: string;
+            impoundReason?: string;
+        };
+    }
+}
 
 export type DealershipCore = {
     _id?: string;
@@ -18,7 +32,7 @@ export type CurrencyDefinitions = {
 export type Dealership = DealershipCore & {
     factionId?: string;
     location?: Locations;
-    vehicles?: Array<Vehicles>;
+    vehicles?: Array<AllowedVehicles>;
 };
 
 export type PurchaseHistory = {
@@ -26,6 +40,9 @@ export type PurchaseHistory = {
     purchaseQty: number;
     purchaseDataTime: Date;
     purchaseAmount: number;
+    orderStatus: string;
+    deliveryStatus: string;
+    deliveryTime?: Date;
 };
 export type Locations = {
     DelerShipLocation?: Array<Locals>;
@@ -47,7 +64,7 @@ const VehicleTypes = {
     air: 4,
     luxury: 5,
     motorcycle: 6,
-    rentel: 7,
+    rental: 7,
 } as const;
 
 export type VEHICLE_TYPES = keyof typeof VehicleTypes;
@@ -55,40 +72,49 @@ export type VEHICLE_TYPES = keyof typeof VehicleTypes;
 export type Locals = {
     locationId: string;
     locationName: string;
-    pos: alt.Vector3;
+    pos?: alt.Vector3;
     spawnSpots?: Array<{ pos: alt.Vector3; rot: alt.Vector3 }>;
 };
 
-export type Vehicles = {
+export type AllowedVehicles = {
     vehicleId: string;
-    vehicleCategory: VEHICLE_CATEFORY;
-    vehicleName: string;
-    vehicleModel: string;
-    VehicleSalePrice: number;
-    VehiclePurchasePrice?: number;
+    VehiclePurchasePrice: number;
+    VehicleSalePrice?: number;
     saleHistory?: Array<SalesHistory>;
     purchaseHistory?: Array<PurchaseHistory>;
-    isDisabled?: boolean;
     stock?: number;
     availableColor?: string[];
+    showInList?: boolean;
 };
 
+export type Vehicles = {
+    _id?: string;
+    vehicleType: VEHICLE_TYPES;
+    vehicleCategory: VEHICLE_CATEFORY;
+    vehicleLabel: string;
+    vehicleModel: number;
+    isDisabled: boolean;
+    fuelType?: FuelType;
+    consumption?: number;
+    maxFuel?: number;
+};
 export type SalesHistory = {
     salesId: string;
     soldVehicleId: string;
     soldTocharacterId: string;
+    soldBycharacterId?: string;
     soldDateTime: Date;
     soldPrice: number;
     payementStatus: boolean;
     payementType?: AllCurrencyTypes;
 };
 
-const PaymentType = {
-    CASH: 1,
-    BANK: 2,
-} as const;
+// const PaymentType = {
+//     CASH: 1,
+//     BANK: 2,
+// } as const;
 
-export type PAYMENT_TYPE = keyof typeof PaymentType;
+// export type PAYMENT_TYPE = keyof typeof PaymentType;
 const VehicleCategory = {
     Compact_Car: 1,
     SUV: 2,

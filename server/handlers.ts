@@ -2,7 +2,7 @@ import * as alt from 'alt-server';
 import { useRebar } from '@Server/index.js';
 import { Character } from '@Shared/types/character.js';
 import * as Utility from '@Shared/utility/index.js';
-import { Dealership, DealershipCore } from '../shared/interface.js';
+import { AllowedVehicles, Dealership, DealershipCore } from '../shared/interface.js';
 
 const API_NAME = 'rebar-dealership-handlers-api';
 const Rebar = useRebar();
@@ -11,7 +11,7 @@ const getter = Rebar.get.usePlayerGetter();
 const api = Rebar.useApi();
 
 const DEALERSHIP_COLLECTION = 'Vehicleshop';
-
+const vehicleHandleapi = await api.getAsync('rebar-server-vehciles-api');
 const vehicleShops: { [key: string]: Dealership } = {};
 type DealershipChangeCallback = (_id: string, fieldName: string) => void;
 const callbacks: DealershipChangeCallback[] = [];
@@ -32,6 +32,8 @@ async function init() {
     for (const { _id } of vehShopList) {
         const [fullDealership] = await db.getMany<Dealership>({ _id }, DEALERSHIP_COLLECTION);
         if (fullDealership) {
+            const allowedVehicles = await useDealershipHandlers().updateAllVehiclesOfDealership(_id);
+            fullDealership.vehicles = allowedVehicles;
             InternalFunctions.update(fullDealership);
         }
     }
@@ -116,6 +118,20 @@ export function useDealershipHandlers() {
         callbacks.push(callback);
     }
 
+    async function updateAllVehiclesOfDealership(dealershipId: string): Promise<AllowedVehicles[]> {
+        const dealership = await useDealershipHandlers().findDealershipById(dealershipId);
+        if (!dealership || dealership === undefined) return undefined;
+
+        const allowedVehicles: AllowedVehicles[] = [];
+        for (const vehicle of dealership.vehicles) {
+            const isDisabled = await vehicleHandleapi.getVehicleStatus(vehicle.vehicleId);
+            if (!isDisabled) {
+                allowedVehicles.push(vehicle);
+            }
+        }
+        return allowedVehicles;
+    }
+
     return {
         create,
         remove,
@@ -124,6 +140,7 @@ export function useDealershipHandlers() {
         findDealershipByName,
         findDealershipById,
         getAllDealership,
+        updateAllVehiclesOfDealership,
     };
 }
 
